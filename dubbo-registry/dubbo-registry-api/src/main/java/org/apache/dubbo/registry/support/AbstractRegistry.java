@@ -68,30 +68,44 @@ import static org.apache.dubbo.registry.Constants.USER_HOME;
 
 /**
  * AbstractRegistry. (SPI, Prototype, ThreadSafe)
+ * 实现了Registry接口的抽象类，实现了如下方法：
+ * 1、通用的注册、订阅、查询、通知等方法
+ * 2、读取和持久化注册数据到文件，以 properties 格式存储
  */
 public abstract class AbstractRegistry implements Registry {
 
+    // URL地址分隔符，用于文件缓存中，服务提供者URL分隔
     // URL address separator, used in file cache, service provider URL separation
     private static final char URL_SEPARATOR = ' ';
     // URL address separated regular expression for parsing the service provider URL list in the file cache
+    // URL地址分隔正则表达式，用于解析文件缓存中服务提供者URL列表
     private static final String URL_SPLIT = "\\s+";
     // Max times to retry to save properties to local cache file
     private static final int MAX_RETRY_TIMES_SAVE_PROPERTIES = 3;
     // Log output
     protected final Logger logger = LoggerFactory.getLogger(getClass());
     // Local disk cache, where the special key value.registries records the list of registry centers, and the others are the list of notified service providers
+    //本地磁盘缓存。
     private final Properties properties = new Properties();
     // File cache timing writing
+    //注册中心缓存写入执行器。
     private final ExecutorService registryCacheExecutor;
+    //数据版本号
     private final AtomicLong lastCacheChanged = new AtomicLong();
     private final AtomicInteger savePropertiesRetryTimes = new AtomicInteger();
+    //已注册 URL 集合。
     private final Set<URL> registered = new ConcurrentHashSet<>();
+    //订阅 URL 的监听器集合
     private final ConcurrentMap<URL, Set<NotifyListener>> subscribed = new ConcurrentHashMap<>();
+    //被通知的 URL 集合
     private final ConcurrentMap<URL, Map<String, List<URL>>> notified = new ConcurrentHashMap<>();
     // Is it synchronized to save the file
+    //是否同步保存文件
     private boolean syncSaveFile;
+    // 注册中心 URL
     private URL registryUrl;
     // Local disk cache file
+    //本地磁盘缓存文件，缓存注册中心的数据
     private File file;
     private boolean localCacheEnabled;
     private RegistryManager registryManager;
@@ -120,6 +134,7 @@ public abstract class AbstractRegistry implements Registry {
             // When starting the subscription center,
             // we need to read the local cache file for future Registry fault tolerance processing.
             loadProperties();
+            // 通知监听器，URL 变化结果
             notify(url.getBackupUrls());
         }
     }
