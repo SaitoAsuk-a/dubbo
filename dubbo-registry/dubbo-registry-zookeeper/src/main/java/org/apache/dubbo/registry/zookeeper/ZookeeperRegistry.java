@@ -65,6 +65,8 @@ public class ZookeeperRegistry extends CacheableFailbackRegistry {
 
     private final Set<String> anyServices = new ConcurrentHashSet<>();
 
+    //这个ChildListener接口用于把zkclient的事件（IZkChildListener）转换到registry事件（NotifyListener）
+    //这里的做法可以更好的把zkclient的api和dubbo真身的注册中心逻辑分离开，毕竟dubbo除了zkclient以外还可以选择curator。
     private final ConcurrentMap<URL, ConcurrentMap<NotifyListener, ChildListener>> zkListeners = new ConcurrentHashMap<>();
 
     private ZookeeperClient zkClient;

@@ -155,6 +155,7 @@ public abstract class DynamicDirectory<T> extends AbstractDirectory<T> implement
 
     public void subscribe(URL url) {
         setSubscribeUrl(url);
+        //这里registry就是zookeeperRegistry，这在doRefer方法可以看到明确的注入。然后和注册服务时一样，订阅会先由FailbackRegistry完成失效重试的处理，最终会交给zookeeperRegistry.doSubscribe方法。zookeeperRegistry实例拥有ZookeeperClient类型引用，该类型对象封装了和zookeeper通信的逻辑（默认是使用zkclient客户端）。
         registry.subscribe(url, this);
     }
 

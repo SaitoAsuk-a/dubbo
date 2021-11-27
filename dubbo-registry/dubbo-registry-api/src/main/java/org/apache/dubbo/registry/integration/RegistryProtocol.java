@@ -406,6 +406,7 @@ public class RegistryProtocol implements Protocol, ScopeModelAware {
         if (SERVICE_REGISTRY_PROTOCOL.equals(url.getProtocol())) {
             return url;
         }
+        //处理注册中心的协议，用url中registry参数的值作为真实的注册中心协议
         return url.addParameter(REGISTRY_KEY, url.getProtocol()).setProtocol(SERVICE_REGISTRY_PROTOCOL);
     }
 
@@ -474,11 +475,14 @@ public class RegistryProtocol implements Protocol, ScopeModelAware {
     @SuppressWarnings("unchecked")
     public <T> Invoker<T> refer(Class<T> type, URL url) throws RpcException {
         url = getRegistryUrl(url);
+        //拿到真正的注册中心实例 如zookeeperRegistry
         Registry registry = getRegistry(url);
         if (RegistryService.class.equals(type)) {
+            //不太理解，貌似是注册中心服务本身的暴露
             return proxyFactory.getInvoker((T) registry, type, url);
         }
 
+        //分组聚合处理，http://alibaba.github.io/dubbo-doc-static/Merge+By+Group-zh.htm
         // group="a,b" or group="*"
         Map<String, String> qs = (Map<String, String>) url.getAttribute(REFER_KEY);
         String group = qs.get(GROUP_KEY);
@@ -552,6 +556,7 @@ public class RegistryProtocol implements Protocol, ScopeModelAware {
     }
 
     protected <T> ClusterInvoker<T> doCreateInvoker(DynamicDirectory<T> directory, Cluster cluster, Registry registry, Class<T> type) {
+        //这个directory把同一个serviceInterface对应的多个invoker管理起来提供概念上的化多为单一，供路由、均衡算法等使用
         directory.setRegistry(registry);
         directory.setProtocol(protocol);
         // all attributes of REFER_KEY
@@ -561,13 +566,16 @@ public class RegistryProtocol implements Protocol, ScopeModelAware {
             parameters.remove(REGISTER_IP_KEY), 0, getPath(parameters, type), parameters);
         urlToRegistry = urlToRegistry.setScopeModel(directory.getConsumerUrl().getScopeModel());
         urlToRegistry = urlToRegistry.setServiceModel(directory.getConsumerUrl().getServiceModel());
+        //注册自己
         if (directory.isShouldRegister()) {
             directory.setRegisteredConsumerUrl(urlToRegistry);
             registry.register(directory.getRegisteredConsumerUrl());
         }
         directory.buildRouterChain(urlToRegistry);
+        //订阅目标服务提供方
+        // 服务消费方不仅会订阅相关的服务，也会注册自身供其他层使用（服务治理）。特别要注意的是订阅时，同时订阅了三个分类类型：providers，routers，configurators。
         directory.subscribe(toSubscribeUrl(urlToRegistry));
-
+        //合并所有相同invoker
         return (ClusterInvoker<T>) cluster.join(directory, true);
     }
 

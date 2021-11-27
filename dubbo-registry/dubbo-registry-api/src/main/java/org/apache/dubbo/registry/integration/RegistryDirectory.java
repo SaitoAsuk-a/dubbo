@@ -136,7 +136,12 @@ public class RegistryDirectory<T> extends DynamicDirectory<T> {
         if (isDestroyed()) {
             return;
         }
-
+        /**
+         * 这里在每次消费方接受到注册中心的通知后，会做下面这些事：
+         * 更新服务提供方的配置规则
+         * 更新路由规则
+         * 重建invoker实例
+         */
         Map<String, List<URL>> categoryUrls = urls.stream()
                 .filter(Objects::nonNull)
                 .filter(this::isValidCategory)
@@ -144,8 +149,9 @@ public class RegistryDirectory<T> extends DynamicDirectory<T> {
                 .collect(Collectors.groupingBy(this::judgeCategory));
 
         List<URL> configuratorURLs = categoryUrls.getOrDefault(CONFIGURATORS_CATEGORY, Collections.emptyList());
+        // configurators 更新缓存的服务提供方配置规则
         this.configurators = Configurator.toConfigurators(configuratorURLs).orElse(this.configurators);
-
+        // routers  更新缓存的路由配置规则
         List<URL> routerURLs = categoryUrls.getOrDefault(ROUTERS_CATEGORY, Collections.emptyList());
         toRouters(routerURLs).ifPresent(this::addRouters);
 
@@ -199,7 +205,7 @@ public class RegistryDirectory<T> extends DynamicDirectory<T> {
      */
     private void refreshInvoker(List<URL> invokerUrls) {
         Assert.notNull(invokerUrls, "invokerUrls should not be null");
-
+        //如果传入的参数只包含一个empty://协议的url，表明禁用当前服务
         if (invokerUrls.size() == 1
                 && invokerUrls.get(0) != null
                 && EMPTY_PROTOCOL.equals(invokerUrls.get(0).getProtocol())) {
@@ -208,23 +214,25 @@ public class RegistryDirectory<T> extends DynamicDirectory<T> {
             destroyAllInvokers(); // Close all invokers
         } else {
             this.forbidden = false; // Allow to access
-            
             if (invokerUrls == Collections.<URL>emptyList()) {
                 invokerUrls = new ArrayList<>();
             }
             // use local reference to avoid NPE as this.cachedInvokerUrls will be set null by destroyAllInvokers().
             Set<URL> localCachedInvokerUrls = this.cachedInvokerUrls;
             if (invokerUrls.isEmpty() && localCachedInvokerUrls != null) {
+                //如果传入的invokerUrl列表是空，则表示只是下发的override规则或route规则，需要重新交叉对比，决定是否需要重新引用
                 invokerUrls.addAll(localCachedInvokerUrls);
             } else {
                 localCachedInvokerUrls = new HashSet<>();
-                localCachedInvokerUrls.addAll(invokerUrls);//Cached invoker urls, convenient for comparison
+                localCachedInvokerUrls.addAll(invokerUrls);
+                //缓存invokerUrls列表，便于交叉对比
+                // Cached invoker urls, convenient for comparison
                 this.cachedInvokerUrls = localCachedInvokerUrls;
             }
             if (invokerUrls.isEmpty()) {
                 return;
             }
-
+            // 将URL列表转成Invoker列表
             // use local reference to avoid NPE as this.urlInvokerMap will be set null concurrently at destroyAllInvokers().
             Map<URL, Invoker<T>> localUrlInvokerMap = this.urlInvokerMap;
             // can't use local reference as oldUrlInvokerMap's mappings might be removed directly at toInvokers().
@@ -234,9 +242,11 @@ public class RegistryDirectory<T> extends DynamicDirectory<T> {
                 oldUrlInvokerMap = new LinkedHashMap<>(Math.round(1 + localUrlInvokerMap.size() / DEFAULT_HASHMAP_LOAD_FACTOR));
                 localUrlInvokerMap.forEach(oldUrlInvokerMap::put);
             }
+            //换方法名映射Invoker列表
             Map<URL, Invoker<T>> newUrlInvokerMap = toInvokers(oldUrlInvokerMap, invokerUrls);// Translate url list to Invoker map
 
             /**
+             *  如果计算错误，则不进行处理.
              * If the calculation is wrong, it is not processed.
              *
              * 1. The protocol configured by the client is inconsistent with the protocol of the server.
