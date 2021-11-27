@@ -52,6 +52,7 @@ public class Transporters {
         } else {
             handler = new ChannelHandlerDispatcher(handlers);
         }
+        //getTransporter()获取的实例来源于配置，默认返回一个NettyTransporter：
         return getTransporter(url).bind(url, handler);
     }
 

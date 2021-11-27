@@ -231,6 +231,7 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
             if (this.shouldExport()) {
                 this.init();
 
+                //延迟暴露
                 if (shouldDelay()) {
                     doDelayExport();
                 } else {
@@ -379,6 +380,7 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
 
         List<URL> registryURLs = ConfigValidationUtils.loadRegistries(this, true);
 
+        //DUBBO框架整体是基于URL为总线的方式来达到各个模块之间的动态加载
         for (ProtocolConfig protocolConfig : protocols) {
             String pathKey = URL.buildKey(getContextPath(protocolConfig)
                     .map(p -> p + "/" + path)
@@ -631,10 +633,15 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     private void doExportUrl(URL url, boolean withMetaData) {
+        //invoke实际上是一个代理类，从proxyFactory（默认为javassist的proxyFactory）中生成。
+        //Invoker – 执行具体的远程调用
+        //Protocol – 服务地址的发布和订阅
+        //Exporter – 暴露服务或取消暴露
         Invoker<?> invoker = proxyFactory.getInvoker(ref, (Class) interfaceClass, url);
         if (withMetaData) {
             invoker = new DelegateProviderMetaDataInvoker(invoker, this);
         }
+        //发布服务
         Exporter<?> exporter = protocolSPI.export(invoker);
         exporters.add(exporter);
     }

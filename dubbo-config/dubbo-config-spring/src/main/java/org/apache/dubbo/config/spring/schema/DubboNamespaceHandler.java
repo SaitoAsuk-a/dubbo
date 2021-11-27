@@ -41,7 +41,13 @@ import org.w3c.dom.Element;
 
 /**
  * DubboNamespaceHandler
- *
+ * 启动provider的“应用程序入口”
+ *<beans xmlns="...">
+ *     <dubbo:application name="hello-world-app" />
+ *     <dubbo:protocol name="dubbo" port="20880" />
+ *     <dubbo:service interface="net.beamlight.dubbo.service.DemoService" ref="demoService" registry="..." />
+ *     <bean id="demoService" class="net.beamlight.dubbo.provider.DemoServiceImpl" />
+ * </beans>
  * @export
  */
 public class DubboNamespaceHandler extends NamespaceHandlerSupport implements ConfigurableSourceBeanMetadataElement {
@@ -63,6 +69,7 @@ public class DubboNamespaceHandler extends NamespaceHandlerSupport implements Co
         registerBeanDefinitionParser("provider", new DubboBeanDefinitionParser(ProviderConfig.class));
         registerBeanDefinitionParser("consumer", new DubboBeanDefinitionParser(ConsumerConfig.class));
         registerBeanDefinitionParser("protocol", new DubboBeanDefinitionParser(ProtocolConfig.class));
+        //DubboBeanDefinitionParser中主要做了一些BeanDefinition的初始化
         registerBeanDefinitionParser("service", new DubboBeanDefinitionParser(ServiceBean.class));
         registerBeanDefinitionParser("reference", new DubboBeanDefinitionParser(ReferenceBean.class));
         registerBeanDefinitionParser("annotation", new AnnotationBeanDefinitionParser());

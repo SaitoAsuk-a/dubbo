@@ -66,6 +66,7 @@ public class Exchangers {
             throw new IllegalArgumentException("handler == null");
         }
         url = url.addParameterIfAbsent(Constants.CODEC_KEY, "exchange");
+        //Exchanger的默认实现只有一个：HeaderExchanger
         return getExchanger(url).bind(url, handler);
     }
 
@@ -110,6 +111,8 @@ public class Exchangers {
 
     public static Exchanger getExchanger(URL url) {
         String type = url.getParameter(Constants.EXCHANGER_KEY, Constants.DEFAULT_EXCHANGER);
+        //getExchanger方法实际上调用的是ExtensionLoader的相关方法，这里的ExtensionLoader是dubbo插件化的核心
+        //Exchanger的默认实现只有一个：HeaderExchanger
         return url.getOrDefaultFrameworkModel().getExtensionLoader(Exchanger.class).getExtension(type);
     }
 
