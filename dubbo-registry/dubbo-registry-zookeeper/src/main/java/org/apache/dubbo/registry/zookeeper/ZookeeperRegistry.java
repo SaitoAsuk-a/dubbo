@@ -127,6 +127,8 @@ public class ZookeeperRegistry extends CacheableFailbackRegistry {
     public void doRegister(URL url) {
         try {
             checkDestroyed();
+            //这里的zkClient是被dubbo封装过的对象。
+            //toUrlPath方法，它的作用就是把url格式化成最终存储在zookeeper中的数据格式 category参数，它表示注册类型
             zkClient.create(toUrlPath(url), url.getParameter(DYNAMIC_KEY, true));
         } catch (Throwable e) {
             throw new RpcException("Failed to register " + url + " to zookeeper " + getUrl() + ", cause: " + e.getMessage(), e);

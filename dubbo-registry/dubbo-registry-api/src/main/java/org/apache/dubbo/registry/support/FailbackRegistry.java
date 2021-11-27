@@ -42,6 +42,7 @@ import static org.apache.dubbo.registry.Constants.REGISTRY_RETRY_PERIOD_KEY;
 
 /**
  * FailbackRegistry. (SPI, Prototype, ThreadSafe)
+ * 正的注册订阅的实现逻辑在 FailbackRegistry 实现，并且 FailbackRegistry 提供了失败重试的机制。
  */
 public abstract class FailbackRegistry extends AbstractRegistry {
 
@@ -57,6 +58,7 @@ public abstract class FailbackRegistry extends AbstractRegistry {
 
     /**
      * The time in milliseconds the retryExecutor will wait
+     * 重试频率
      */
     private final int retryPeriod;
 
