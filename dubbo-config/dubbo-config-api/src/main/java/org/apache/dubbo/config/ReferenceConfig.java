@@ -482,6 +482,7 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
             if (!UrlUtils.isRegistry(curUrl)){
                 List<Invoker<?>> invokers = new ArrayList<>();
                 invokers.add(invoker);
+//                //这里会用cluster的join方法生成一个Invoker：Invoker invoker = cluster.join(directory);，这里的cluster 是FailoverCluster，生成的就是FailoverClusterInvoker。
                 invoker = Cluster.getCluster(scopeModel, Cluster.DEFAULT).join(new StaticDirectory(curUrl, invokers), true);
             }
         } else {
